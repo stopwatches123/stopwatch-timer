@@ -15,7 +15,7 @@
     <div id="stopwatches"></div>
 
     <script>
-        const categories = ['Work', 'YouTube', 'Job Searching'];
+        const categories = ['Work', 'YouTube', 'Job Hunt'];
         const stopwatches = {};
 
         function createStopwatch(category) {
@@ -28,33 +28,44 @@
                 <button onclick="reset('${category}')">Reset</button>`;
             document.getElementById('stopwatches').appendChild(container);
 
-            stopwatches[category] = { time: 0, interval: null };
+            stopwatches[category] = { startTime: 0, elapsedTime: 0, interval: null, running: false };
         }
 
         function start(category) {
-            if (!stopwatches[category].interval) {
-                stopwatches[category].interval = setInterval(() => {
-                    stopwatches[category].time++;
-                    document.getElementById(`time-${category}`).textContent = formatTime(stopwatches[category].time);
-                }, 1000);
+            if (!stopwatches[category].running) {
+                stopwatches[category].running = true;
+                stopwatches[category].startTime = performance.now() - stopwatches[category].elapsedTime;
+                stopwatches[category].interval = requestAnimationFrame(() => updateTime(category));
             }
         }
 
         function pause(category) {
-            clearInterval(stopwatches[category].interval);
-            stopwatches[category].interval = null;
+            if (stopwatches[category].running) {
+                stopwatches[category].running = false;
+                stopwatches[category].elapsedTime = performance.now() - stopwatches[category].startTime;
+                cancelAnimationFrame(stopwatches[category].interval);
+            }
         }
 
         function reset(category) {
             pause(category);
-            stopwatches[category].time = 0;
+            stopwatches[category].elapsedTime = 0;
             document.getElementById(`time-${category}`).textContent = "00:00:00";
+        }
+
+        function updateTime(category) {
+            if (stopwatches[category].running) {
+                let currentTime = performance.now();
+                stopwatches[category].elapsedTime = currentTime - stopwatches[category].startTime;
+                document.getElementById(`time-${category}`).textContent = formatTime(stopwatches[category].elapsedTime / 1000);
+                stopwatches[category].interval = requestAnimationFrame(() => updateTime(category));
+            }
         }
 
         function formatTime(seconds) {
             let hrs = Math.floor(seconds / 3600);
             let mins = Math.floor((seconds % 3600) / 60);
-            let secs = seconds % 60;
+            let secs = Math.floor(seconds % 60);
             return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
         }
 
